@@ -14,6 +14,8 @@ this file and include it in basic-server.js so that it actually works.
 
 var data = [];
 
+var messageId = 0;
+
 var requestHandler = function(request, response) {
 // request is an object with key url and method
 
@@ -37,29 +39,33 @@ var requestHandler = function(request, response) {
 
     var url = '/classes/messages';
     var method = request.method;
-    //default status code if our if statements don't catch the request
-    var statusCode = 404;
     // See the note below about CORS headers.
     var headers = defaultCorsHeaders;
     headers['Content-Type'] = 'application/json';
 
 
   if (method === 'GET' && request.url === url) {
-    statusCode = 200;
+    response.writeHead(200, headers);
+    response.end(JSON.stringify(data));
   } else if (method === 'POST' && request.url === url) {
-    // console.log('REQUEST:\n',request);
-    var holder = [];
-    console.log()
+    let messageObject;
+    response.writeHead(201, headers)
     request.on('data', (chunk) => {
-      holder.push(chunk);
+      console.log('string chunk', chunk.toString());
+      messageObject = JSON.parse(chunk.toString());
+      messageObject.message_id = messageId;
+      messageId++;
+
     }).on('end', () => {
-      holder = holder.toString();
-      console.log('holder string:', holder);
-      holder = JSON.parse(holder);
-      data.push(holder)
-    })
-    statusCode = 201;
-    debugger;
+      data.push(messageObject);
+     })
+     response.end();
+  } else if (method === 'OPTIONS' && request.url === url) {
+    response.writeHead(204, headers);
+    response.end();
+  } else {
+    response.writeHead(404, headers);
+    response.end('404 not found');
   }
 
   // Tell the client we are sending them plain text.
@@ -70,7 +76,7 @@ var requestHandler = function(request, response) {
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  // response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -79,7 +85,7 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end(JSON.stringify(data));
+  // response.end(JSON.stringify(data));
   // console.log(`request:\n ${JSON.stringify(request)}\nresponse:\n ${JSON.stringify(response)}`);
 
 };
