@@ -47,8 +47,17 @@ var requestHandler = function(request, response) {
   if (method === 'GET' && request.url === url) {
     statusCode = 200;
   } else if (method === 'POST' && request.url === url) {
-    console.log(request);
-    data.push(request._postData);
+    // console.log('REQUEST:\n',request);
+    var holder = [];
+    console.log()
+    request.on('data', (chunk) => {
+      holder.push(chunk);
+    }).on('end', () => {
+      holder = holder.toString();
+      console.log('holder string:', holder);
+      holder = JSON.parse(holder);
+      data.push(holder)
+    })
     statusCode = 201;
     debugger;
   }
